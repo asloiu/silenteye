@@ -16,6 +16,10 @@ import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
 import android.widget.Button
+import android.graphics.Color
+import androidx.core.view.WindowInsetsControllerCompat
+import android.view.View
+import androidx.core.view.WindowCompat
 import android.content.Intent
 
 
@@ -50,6 +54,12 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        // NAV BAR
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+            controller.isAppearanceLightStatusBars = false // Iconos blancos
+            controller.isAppearanceLightNavigationBars = false // Iconos blancos en la barra de navegación
+        }
 
         // Contacts
         contacts = ContactsRetriever(this)
@@ -65,6 +75,12 @@ class MainActivity : AppCompatActivity() {
         buttonClip = findViewById(R.id.getClip)
         buttonClip.setOnClickListener {
             Log.d("Clipboard", getClipboard.getClipboardData())
+            // Show clipboard content
+            Toast.makeText(
+                this,
+                getClipboard.getClipboardData(),
+                Toast.LENGTH_LONG
+            ).show()
         }
         // Command Executor
         execCommand = ShellCommandExecutor()

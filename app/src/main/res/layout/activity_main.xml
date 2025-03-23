@@ -11,34 +11,83 @@
         android:id="@+id/getClip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:backgroundTint="#6F6565"
         android:text="Get Clipboard"
+        android:textColor="#FFFFFF"
+        android:textColorLink="#EAEAEA"
+        app:icon="?attr/actionModePasteDrawable"
+        app:iconTint="#FFFFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.345" />
+        app:layout_constraintVertical_bias="0.364" />
 
     <Button
         android:id="@+id/startRecording"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start Audio Record"
+        android:backgroundTint="#265902"
+        android:text="Start"
+        android:textColor="#FFFFFFFF"
+        android:textColorLink="#EAEAEA"
+        app:icon="@android:drawable/presence_audio_online"
+        app:iconTint="#FFFFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.065"
+        app:layout_constraintHorizontal_bias="0.264"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/getClip"
-        app:layout_constraintVertical_bias="0.343" />
+        app:layout_constraintVertical_bias="0.106" />
 
     <Button
         android:id="@+id/stopRecording"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Stop Audio Record"
+        android:backgroundTint="#8A1212"
+        android:text="Stop"
+        android:textColor="#FFFFFFFF"
+        android:textColorLink="#EAEAEA"
+        app:icon="@android:drawable/presence_audio_busy"
+        app:iconTint="#FFFFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.934"
+        app:layout_constraintHorizontal_bias="0.714"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/getClip"
-        app:layout_constraintVertical_bias="0.343" />
+        app:layout_constraintVertical_bias="0.106" />
+
+    <Button
+        android:id="@+id/startVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#255702"
+        android:text="Start"
+        android:textColor="#FFFFFFFF"
+        android:textColorLink="#EAEAEA"
+        app:icon="@android:drawable/presence_video_online"
+        app:iconTint="#FFFFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.264"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/startRecording"
+        app:layout_constraintVertical_bias="0.118" />
+
+    <Button
+        android:id="@+id/stopVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#8D1313"
+        android:text="Stop"
+        android:textColor="#FFFFFFFF"
+        android:textColorLink="#EAEAEA"
+        app:icon="@android:drawable/presence_video_busy"
+        app:iconTint="#FFFFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.714"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/stopRecording"
+        app:layout_constraintVertical_bias="0.121" />
 </androidx.constraintlayout.widget.ConstraintLayout>
