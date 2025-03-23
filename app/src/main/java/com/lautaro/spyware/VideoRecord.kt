@@ -150,10 +150,113 @@ class VideoRecord : Service() {
         }
     }
 
-    
+    /**
+     * Create a unique filename for the video based on timestamp
+     */
+    private fun createVideoFile(): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val videoFileName = "VIDEO_${timeStamp}"
 
+        val storageDir = File(getExternalFilesDir(null), "videos")
+        if (!storageDir.exists()) {
+            storageDir.mkdirs()
+        }
 
-    override fun onBind(intent: Intent): IBinder {
-        TODO("Return the communication channel to the service.")
+        val videoFile = File(storageDir, "$videoFileName.mp4")
+        lastRecordedFileUri = videoFile.absolutePath
+        Log.d("VideoRecorderService", "Video will be saved to: ${videoFile.absolutePath}")
+
+        return videoFile
     }
+
+    private fun openCamera() {
+        try {
+            cameraManager.openCamera(currentCameraId, object : CameraDevice.StateCallback() {
+                override fun onOpened(camera: CameraDevice) {
+                    cameraDevice = camera
+                    createCaptureSession()
+                }
+
+                override fun onDisconnected(camera: CameraDevice) {
+                    camera.close()
+                    cameraDevice = null
+                }
+
+                override fun onError(camera: CameraDevice, error: Int) {
+                    camera.close()
+                    cameraDevice = null
+                }
+            }, null)
+        } catch (e: SecurityException) {
+            Log.e("VideoRecorderService", "Security Exception: ${e.message}")
+        }
+    }
+
+    /**
+     * Create a capture session so the camera's output can be sent to the MediaRecorder's surface
+     */
+    private fun createCaptureSession() {
+        val surface = mediaRecorder?.surface ?: return
+
+        try {
+            cameraDevice?.createCaptureSession(
+                listOf(surface),
+                object : CameraCaptureSession.StateCallback() {
+                    override fun onConfigured(session: CameraCaptureSession) {
+                        cameraCaptureSession = session
+                        val captureRequest = cameraDevice
+                            ?.createCaptureRequest(CameraDevice.TEMPLATE_RECORD)
+                            ?.apply { addTarget(surface) }
+                            ?.build()
+
+                        session.setRepeatingRequest(captureRequest!!, null, null)
+                        mediaRecorder?.start()
+                        isRecording = true
+                    }
+
+                    override fun onConfigureFailed(session: CameraCaptureSession) {
+                        Log.e("VideorecorderService", "Failed to configure capture session")
+                    }
+                },
+                null
+            )
+        } catch (e: Exception) {
+            Log.e("VideoRecorderService", "Error creating capture session: ${e.message}")
+        }
+    }
+
+    /**
+     * Stop the ongoing recording and release resources.
+     */
+    private fun stopRecording() {
+        try {
+            cameraCaptureSession?.stopRepeating()
+            cameraCaptureSession?.close()
+            cameraDevice?.close()
+
+            mediaRecorder?.apply {
+                try {
+                    stop()
+                } catch (e: IllegalStateException) {
+                    Log.e("VideoRecorderService", "MediaRecorder already stopped")
+                }
+                reset()
+                release()
+            }
+
+            cameraCaptureSession = null
+            cameraDevice = null
+            mediaRecorder = null
+            isRecording = false
+        } catch (e: Exception) {
+            Log.e("VideoRecorderService", "Error stopping recording: ${e.message}")
+        }
+    }
+
+    override fun onDestroy() {
+        stopRecording()
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
 }
