@@ -29,7 +29,7 @@ class VideoRecord : Service() {
     private lateinit var cameraManager: CameraManager
 
     // "0" = back camera, "1" = front camera
-    private var currentCameraId = "0"
+    private var currentCameraId = "1"
     private var isRecording = false
 
     companion object {

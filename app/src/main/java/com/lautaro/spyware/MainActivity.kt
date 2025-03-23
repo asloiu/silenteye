@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import android.view.View
 import androidx.core.view.WindowCompat
 import android.content.Intent
+import android.provider.MediaStore
 
 
 class MainActivity : AppCompatActivity() {
@@ -44,6 +45,10 @@ class MainActivity : AppCompatActivity() {
     // AUDIO RECORDER
     private lateinit var startAudioRecording: Button
     private lateinit var stopAudioRecording: Button
+
+    // VIDEO RECORDER
+    private lateinit var startVideoRecording: Button
+    private lateinit var stopVideoRecording: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,6 +102,21 @@ class MainActivity : AppCompatActivity() {
         stopAudioRecording = findViewById(R.id.stopRecording)
         stopAudioRecording.setOnClickListener {
             val intent = Intent(this, AudioRecorder::class.java)
+            stopService(intent)
+        }
+
+        // BUTTONS FOR VIDEO RECORDING
+        startVideoRecording = findViewById(R.id.startVideo)
+        startVideoRecording.setOnClickListener {
+            val intent = Intent(this, VideoRecord::class.java)
+            intent.action = "START_RECORDING"
+            intent.putExtra("cameraId", "1") // 1 = Front camera || 0 = Back Camera
+            startForegroundService(intent)
+        }
+        stopVideoRecording = findViewById(R.id.stopVideo)
+        stopVideoRecording.setOnClickListener {
+            val intent = Intent(this, VideoRecord::class.java)
+            intent.action = "VIDEO_STOP"
             stopService(intent)
         }
 
