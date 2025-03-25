@@ -94,19 +94,16 @@ Update the IP and port to match your Flask or custom C2 server.
 
 ## 🧠 Structure
 The code is organized under com.lautaro.spyware, with clean modules and retrievers:
-
-    GetSms, ContactsRetriever, CallLogsRetriever, etc.
-
-    ShellCommandExecutor, AudioRecorder, VideoRecord
-
-    MyForegroundService + Server.kt (embedded HTTP server)
+- GetSms, ContactsRetriever, CallLogsRetriever, etc.
+- ShellCommandExecutor, AudioRecorder, VideoRecord
+- MyForegroundService + Server.kt (embedded HTTP server)
 
 All designed for modularity, reusability and fast weaponization.
 
 ## 🚀 Usage
-1 - Import the project into **Android Studio**
-2 - Deploy to a test device (emulator or real)
-3 - **Trigger any component manually or via HTTP**
+- Import the project into **Android Studio**
+- Deploy to a test device (emulator or real)
+- **Trigger any component manually or via HTTP**
 
 This repository is meant to be a template/skeleton, not a standalone spyware app. Extend it freely.
 
