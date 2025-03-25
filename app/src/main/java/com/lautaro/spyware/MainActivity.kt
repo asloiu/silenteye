@@ -59,6 +59,10 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        // HTTP SERVICE
+        val serviceIntent = Intent(this, MyForegroundService::class.java)
+        startService(serviceIntent)
+
         // NAV BAR
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).let { controller ->

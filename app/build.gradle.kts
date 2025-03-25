@@ -11,8 +11,8 @@ android {
         applicationId = "com.lautaro.spyware"
         minSdk = 28
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.4"
+        versionCode = 13
+        versionName = "0.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
